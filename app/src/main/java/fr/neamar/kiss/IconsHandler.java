@@ -18,6 +18,8 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
@@ -181,34 +183,42 @@ public class IconsHandler {
     /**
      * Get or generate icon for an app
      */
-    public Drawable getDrawableIconForPackage(ComponentName componentName) {
+    public Drawable getDrawableIconForPackage(final ComponentName componentName) {
         try {
-            // system icons, nothing to do
-            if (iconsPackPackageName.equalsIgnoreCase("default")) {
-                return pm.getActivityIcon(componentName);
-            }
+            Drawable icon = null;
 
-            String drawable = packagesDrawables.get(componentName.toString());
-            if (drawable != null) { //there is a custom icon
-                int id = iconPackres.getIdentifier(drawable, "drawable", iconsPackPackageName);
-                if (id > 0) {
-                    //noinspection deprecation: Resources.getDrawable(int, Theme) requires SDK 21+
-                    return iconPackres.getDrawable(id);
+            // Search first in cache
+            icon = cacheGetDrawable(componentName.toString());
+            if (icon != null) {
+                return icon;
+            }
+            
+            // Do we use a custom theme?
+            if (iconsPackPackageName.equalsIgnoreCase("default")) {
+                icon = pm.getActivityIcon(componentName);
+            } else {
+                String drawableIdentifier = packagesDrawables.get(componentName.toString());
+                if (drawableIdentifier != null) { // There is a custom icon
+                    int id = iconPackres.getIdentifier(drawableIdentifier, "drawable", iconsPackPackageName);
+                    if (id > 0) {
+                        // noinspection deprecation: Resources.getDrawable(int, Theme) requires SDK 21+
+                        icon = iconPackres.getDrawable(id);
+                    }
                 }
             }
 
-            //search first in cache
-            Drawable systemIcon = cacheGetDrawable(componentName.toString());
-            if (systemIcon != null)
-                return systemIcon;
-
-            systemIcon = pm.getActivityIcon(componentName);
-            if (systemIcon instanceof BitmapDrawable) {
-                Drawable generated = generateBitmap(systemIcon);
-                cacheStoreDrawable(componentName.toString(), generated);
-                return generated;
+            if (icon instanceof BitmapDrawable) {
+                final Drawable iconToSave = icon;
+                Handler handler = new Handler();
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Drawable generated = generateBitmap(iconToSave);
+                        cacheStoreDrawable(componentName.toString(), generated);
+                    }
+                });
             }
-            return systemIcon;
+            return icon;
 
         } catch (NameNotFoundException e) {
             Log.e(TAG, "Unable to found component " + componentName.toString() + e);
@@ -252,7 +262,7 @@ public class IconsHandler {
             canvas.drawBitmap(scaledBitmap, (w - scaledBitmap.getWidth()) / 2, (h - scaledBitmap.getHeight()) / 2, null);
             canvas.drawBitmap(mutableMask, 0, 0, paint);
             paint.setXfermode(null);
-        } else { // draw the scaled bitmap without mask        
+        } else { // draw the scaled bitmap without mask
             canvas.drawBitmap(scaledBitmap, (w - scaledBitmap.getWidth()) / 2, (h - scaledBitmap.getHeight()) / 2, null);
         }
 
@@ -282,7 +292,7 @@ public class IconsHandler {
                 iconsPacks.put(packageName, name);
             } catch (PackageManager.NameNotFoundException e) {
                 // shouldn't happen
-                Log.e(TAG, "Unable to found package " + packageName + e);
+                Log.e(TAG, "Unable to find package " + packageName + e);
             }
         }
     }

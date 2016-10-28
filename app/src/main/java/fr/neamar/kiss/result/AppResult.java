@@ -51,8 +51,8 @@ public class AppResult extends Result {
         final ImageView appIcon = (ImageView) v.findViewById(R.id.item_app_icon);
 
         if (!PreferenceManager.getDefaultSharedPreferences(context).getBoolean("icons-hide", false)) {
-            // Display icon directy for first icons, and also for phones above lollipop
-            // (fix a weird recycling issue with ListView on Marshmallow,
+            // Display icon directly for first icons, and also for phones above lollipop
+            // (fix a weird recycling issue with ListView on Marshmallow and Nougat,
             // where the recycling occurs synchronously, before the handler)
             if (position < 15 || Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
                 appIcon.setImageDrawable(this.getDrawable(context));
