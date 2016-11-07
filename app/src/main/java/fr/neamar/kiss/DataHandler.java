@@ -10,6 +10,7 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap.CompressFormat;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
@@ -41,6 +42,8 @@ public class DataHandler extends BroadcastReceiver
     final static private List<String> PROVIDER_NAMES = Arrays.asList(
             "alias", "app", "contacts", "phone", "search", "settings", "shortcuts", "toggles"
     );
+
+    final static private String TAG = "DataHandler";
 
     final private Context context;
     private String currentQuery;
@@ -204,9 +207,7 @@ public class DataHandler extends BroadcastReceiver
             this.context.unregisterReceiver(this);
             Intent i = new Intent(MainActivity.FULL_LOAD_OVER);
             this.context.sendBroadcast(i);
-        } catch (IllegalArgumentException e) {
-            // Nothing
-        }
+        } catch (IllegalArgumentException ignore) {}
 
         this.providersReady = true;
     }
@@ -220,6 +221,7 @@ public class DataHandler extends BroadcastReceiver
      * Reload all currently used data providers
      */
     public void reloadAll() {
+        Log.d(TAG, "Reloading all providers");
         for (ProviderEntry entry : this.providers.values()) {
             if (entry.provider != null && entry.provider.isLoaded()) {
                 entry.provider.reload();

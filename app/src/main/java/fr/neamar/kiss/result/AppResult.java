@@ -9,6 +9,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Handler;
 import android.preference.PreferenceManager;
@@ -20,6 +21,8 @@ import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import fr.neamar.kiss.GetIconWorkerTask;
+import fr.neamar.kiss.IconsHandler;
 import fr.neamar.kiss.KissApplication;
 import fr.neamar.kiss.R;
 import fr.neamar.kiss.adapter.RecordAdapter;
@@ -54,7 +57,7 @@ public class AppResult extends Result {
             // Display icon directly for first icons, and also for phones above lollipop
             // (fix a weird recycling issue with ListView on Marshmallow and Nougat,
             // where the recycling occurs synchronously, before the handler)
-            if (position < 15 || Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
+            /*if (position < 15 || Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
                 appIcon.setImageDrawable(this.getDrawable(context));
             } else {
                 // Do actions on a message queue to avoid performance issues on main thread
@@ -65,6 +68,18 @@ public class AppResult extends Result {
                         appIcon.setImageDrawable(getDrawable(context));
                     }
                 });
+            }*/
+            if (appIcon.getTag(R.id.tag_icon_worker) == null || !appIcon.getTag(R.id.tag_icon_worker).equals(className)) {
+                appIcon.setImageResource(0);
+                GetIconWorkerTask task = new GetIconWorkerTask(context, KissApplication.getIconsHandler(context), appIcon, className);
+                if (Build.VERSION.SDK_INT > 10) {
+                    // Force multithreading
+                    //task.execute();
+                    task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                }
+                else {
+                    task.execute();
+                }
             }
         }
         else {
@@ -159,12 +174,13 @@ public class AppResult extends Result {
 
     @Override
     public Drawable getDrawable(Context context) {
-        
-        if (icon == null) {
+
+        /*if (icon == null) {
              icon = KissApplication.getIconsHandler(context).getDrawableIconForPackage(className);             
         }
-                
-        return icon;
+
+        return icon;*/
+        return null;
         
     }
 
