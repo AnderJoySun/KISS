@@ -15,6 +15,7 @@ import android.widget.Toast;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -139,7 +140,13 @@ public class SettingsActivity extends PreferenceActivity implements
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
 
         if (key.equalsIgnoreCase("icons-pack")) {
-            KissApplication.getIconsHandler(this).loadIconsPack(sharedPreferences.getString(key, "default"));
+            String iconPack = sharedPreferences.getString(key, null);
+            if (iconPack == null) {
+                KissApplication.setIconPack(null);
+            }
+            else {
+                KissApplication.setIconPack(new IconPack(this, iconPack));
+            }
         }
 
         if (key.equalsIgnoreCase("sort-apps")) {
@@ -206,16 +213,16 @@ public class SettingsActivity extends PreferenceActivity implements
     }
 
     protected void setListPreferenceIconsPacksData(ListPreference lp) {
-        IconsHandler iph = KissApplication.getIconsHandler(this);
+        HashMap<String, String> iconPacks = IconPack.loadAvailableIconsPacks(this);
 
-        CharSequence[] entries = new CharSequence[iph.getIconsPacks().size() + 1];
-        CharSequence[] entryValues = new CharSequence[iph.getIconsPacks().size() + 1];
+        CharSequence[] entries = new CharSequence[iconPacks.size() + 1];
+        CharSequence[] entryValues = new CharSequence[iconPacks.size() + 1];
 
         int i = 0;
         entries[0] = this.getString(R.string.icons_pack_default_name);
         entryValues[0] = "default";
-        for (String packageIconsPack : iph.getIconsPacks().keySet()) {
-            entries[++i] = iph.getIconsPacks().get(packageIconsPack);
+        for (String packageIconsPack : iconPacks.keySet()) {
+            entries[++i] = iconPacks.get(packageIconsPack);
             entryValues[i] = packageIconsPack;
         }
 

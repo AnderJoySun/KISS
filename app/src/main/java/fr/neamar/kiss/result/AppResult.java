@@ -11,7 +11,6 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
-import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.view.MenuItem;
@@ -22,7 +21,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import fr.neamar.kiss.GetIconWorkerTask;
-import fr.neamar.kiss.IconsHandler;
 import fr.neamar.kiss.KissApplication;
 import fr.neamar.kiss.R;
 import fr.neamar.kiss.adapter.RecordAdapter;
@@ -71,7 +69,7 @@ public class AppResult extends Result {
             }*/
             if (appIcon.getTag(R.id.tag_icon_worker) == null || !appIcon.getTag(R.id.tag_icon_worker).equals(className)) {
                 appIcon.setImageResource(0);
-                GetIconWorkerTask task = new GetIconWorkerTask(context, KissApplication.getIconsHandler(context), appIcon, className);
+                GetIconWorkerTask task = new GetIconWorkerTask(context, KissApplication.getIconPack(context), appIcon, className);
                 if (Build.VERSION.SDK_INT > 10) {
                     // Force multithreading
                     //task.execute();

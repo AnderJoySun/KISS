@@ -21,19 +21,19 @@ import java.io.FileOutputStream;
 public class GetIconWorkerTask extends AsyncTask<Void, Void, Drawable> {
 
     private static final String TAG = "GetIconWorkerTask";
-    private final IconsHandler mIconsHandler;
-    private final PackageManager mPackageManager;
-    private final Context mContext;
-    private final ImageView mTarget;
-    private final ComponentName mComponentName;
+    private final IconPack iconPack;
+    private final PackageManager packageManager;
+    private final Context context;
+    private final ImageView target;
+    private final ComponentName componentName;
 
-    public GetIconWorkerTask(Context ctx, IconsHandler iconsHandler, ImageView target, ComponentName componentName) {
-        mTarget = target;
-        mTarget.setTag(R.id.tag_icon_worker, componentName);
-        mIconsHandler = iconsHandler;
-        mContext = ctx;
-        mPackageManager = ctx.getPackageManager();
-        mComponentName = componentName;
+    public GetIconWorkerTask(Context context, IconPack iconPack, ImageView target, ComponentName componentName) {
+        this.target = target;
+        this.target.setTag(R.id.tag_icon_worker, componentName);
+        this.iconPack = iconPack;
+        this.context = context;
+        this.packageManager = context.getPackageManager();
+        this.componentName = componentName;
     }
 
 
@@ -43,47 +43,40 @@ public class GetIconWorkerTask extends AsyncTask<Void, Void, Drawable> {
             Drawable icon = null;
 
             // Search first in cache
-            icon = cacheGetDrawable(mComponentName.toString());
+            icon = cacheGetDrawable(componentName.toString());
             if (icon != null) {
                 return icon;
             }
 
             // Do we use a custom theme?
-            if (mIconsHandler.iconsPackPackageName.equalsIgnoreCase("default")) {
-                icon = mPackageManager.getActivityIcon(mComponentName);
+            if (iconPack == null) {
+                icon = packageManager.getActivityIcon(componentName);
             } else {
-                String drawableIdentifier = mIconsHandler.packagesDrawables.get(mComponentName.toString());
-                if (drawableIdentifier != null) {
-                    // There is a custom icon
-                    icon = mIconsHandler.loadBitmapFromIconPack(drawableIdentifier);
-                } else {
-                    // Generate the alternative icon from the icon pack components
-                    icon = mIconsHandler.generateBitmap(mPackageManager.getActivityIcon(mComponentName));
-                }
+                icon = iconPack.getIcon(this.context, componentName);
             }
 
             Log.d(TAG, "ui thread: " + Looper.getMainLooper().equals(Looper.myLooper()));
 
             if (icon instanceof BitmapDrawable) {
                 // If the icon is a BitmapDrawable, then we can cache it!
-                cacheStoreDrawable(mComponentName.toString(), (BitmapDrawable) icon);
+                cacheStoreDrawable(componentName.toString(), (BitmapDrawable) icon);
             }
 
             return icon;
 
         } catch (PackageManager.NameNotFoundException e) {
-            Log.e("tmp", "Unable to found component " + mComponentName.toString() + e);
+            Log.e("tmp", "Unable to found component " + componentName.toString() + e);
             return null;
         }
     }
 
     protected void onPostExecute(Drawable result) {
-        if (mTarget != null) {
-            if (mTarget.getTag(R.id.tag_icon_worker) == null || mTarget.getTag(R.id.tag_icon_worker).equals(mComponentName)) {
-                mTarget.setImageDrawable(result);
-                Animation myFadeInAnimation = AnimationUtils.loadAnimation(mContext, R.anim.fade_in);
+        if (target != null) {
+            if (target.getTag(R.id.tag_icon_worker) == null || target.getTag(R.id.tag_icon_worker).equals(componentName)) {
+                target.setImageDrawable(result);
+                Animation myFadeInAnimation = AnimationUtils.loadAnimation(context, R.anim.fade_in);
                 myFadeInAnimation.setDuration(150);
-                mTarget.startAnimation(myFadeInAnimation);
+                target.startAnimation(myFadeInAnimation);
             }
         }
 
@@ -118,7 +111,7 @@ public class GetIconWorkerTask extends AsyncTask<Void, Void, Drawable> {
         FileInputStream fis;
         try {
             fis = new FileInputStream(cacheGetFileName(key));
-            BitmapDrawable drawable = new BitmapDrawable(mContext.getResources(), BitmapFactory.decodeStream(fis));
+            BitmapDrawable drawable = new BitmapDrawable(context.getResources(), BitmapFactory.decodeStream(fis));
             fis.close();
             return drawable;
         } catch (Exception e) {
@@ -133,18 +126,21 @@ public class GetIconWorkerTask extends AsyncTask<Void, Void, Drawable> {
      * {cacheDir}/icons/{icons_pack_package_name}_{key_hash}.png
      */
     private File cacheGetFileName(String key) {
-        return new File(getIconsCacheDir() + mIconsHandler.iconsPackPackageName + "_" + key.hashCode() + ".png");
+        if (iconPack == null) {
+            return new File(getIconsCacheDir() + "default_" + key.hashCode() + ".png");
+        }
+        return new File(getIconsCacheDir() + iconPack.packageName + "_" + key.hashCode() + ".png");
     }
 
     private File getIconsCacheDir() {
-        return new File(mContext.getCacheDir().getPath() + "/icons/");
+        return new File(context.getCacheDir().getPath() + "/icons/");
     }
 
     /**
      * Clear cache
      */
     private void cacheClear() {
-        File cacheDir = this.getIconsCacheDir();
+        File cacheDir = getIconsCacheDir();
 
         if (!cacheDir.isDirectory())
             return;
