@@ -24,7 +24,6 @@ public class IconHandler {
         super();
         iconPack = KissApplication.getIconPack();
         diskCache = new IconDiskCache(ctx, iconPack);
-        memoryCache.setLimit(1024 * 1024 * 32); // 32MB should be more than enough
     }
 
     public void reset() {
