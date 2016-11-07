@@ -26,14 +26,18 @@ public class GetIconWorkerTask extends AsyncTask<Void, Void, Drawable> {
     private final Context context;
     private final ImageView target;
     private final ComponentName componentName;
+    private final IconDiskCache cache;
 
-    public GetIconWorkerTask(Context context, IconPack iconPack, ImageView target, ComponentName componentName) {
+    public GetIconWorkerTask(Context context, IconPack iconPack,
+                             ImageView target, ComponentName componentName,
+                             IconDiskCache cache) {
         this.target = target;
         this.target.setTag(R.id.tag_icon_worker, componentName);
         this.iconPack = iconPack;
         this.context = context;
         this.packageManager = context.getPackageManager();
         this.componentName = componentName;
+        this.cache = cache;
     }
 
 
@@ -43,23 +47,23 @@ public class GetIconWorkerTask extends AsyncTask<Void, Void, Drawable> {
             Drawable icon = null;
 
             // Search first in cache
-            icon = cacheGetDrawable(componentName.toString());
+            icon = cache.cacheGetDrawable(context, componentName.toString(), iconPack);
             if (icon != null) {
                 return icon;
             }
 
             // Do we use a custom theme?
-            if (iconPack == null) {
-                icon = packageManager.getActivityIcon(componentName);
-            } else {
+            if (iconPack != null) {
                 icon = iconPack.getIcon(this.context, componentName);
+            } else {
+                icon = packageManager.getActivityIcon(componentName);
             }
 
             Log.d(TAG, "ui thread: " + Looper.getMainLooper().equals(Looper.myLooper()));
 
             if (icon instanceof BitmapDrawable) {
                 // If the icon is a BitmapDrawable, then we can cache it!
-                cacheStoreDrawable(componentName.toString(), (BitmapDrawable) icon);
+                cache.cacheStoreDrawable(context, componentName.toString(), iconPack, (BitmapDrawable) icon);
             }
 
             return icon;
@@ -80,75 +84,5 @@ public class GetIconWorkerTask extends AsyncTask<Void, Void, Drawable> {
             }
         }
 
-    }
-
-    private boolean isDrawableInCache(String key) {
-        File drawableFile = cacheGetFileName(key);
-        return drawableFile.isFile();
-    }
-
-    private boolean cacheStoreDrawable(String key, BitmapDrawable drawable) {
-        File drawableFile = cacheGetFileName(key);
-        FileOutputStream fos;
-        try {
-            fos = new FileOutputStream(drawableFile);
-            ((BitmapDrawable) drawable).getBitmap().compress(Bitmap.CompressFormat.PNG, 80, fos);
-            fos.flush();
-            fos.close();
-            return true;
-        } catch (Exception e) {
-            Log.e(TAG, "Unable to store drawable in cache " + e);
-        }
-        return false;
-    }
-
-    private Drawable cacheGetDrawable(String key) {
-
-        if (!isDrawableInCache(key)) {
-            return null;
-        }
-
-        FileInputStream fis;
-        try {
-            fis = new FileInputStream(cacheGetFileName(key));
-            BitmapDrawable drawable = new BitmapDrawable(context.getResources(), BitmapFactory.decodeStream(fis));
-            fis.close();
-            return drawable;
-        } catch (Exception e) {
-            Log.e(TAG, "Unable to get drawable from cache " + e);
-        }
-
-        return null;
-    }
-
-    /**
-     * create path for icons cache like this
-     * {cacheDir}/icons/{icons_pack_package_name}_{key_hash}.png
-     */
-    private File cacheGetFileName(String key) {
-        if (iconPack == null) {
-            return new File(getIconsCacheDir() + "default_" + key.hashCode() + ".png");
-        }
-        return new File(getIconsCacheDir() + iconPack.packageName + "_" + key.hashCode() + ".png");
-    }
-
-    private File getIconsCacheDir() {
-        return new File(context.getCacheDir().getPath() + "/icons/");
-    }
-
-    /**
-     * Clear cache
-     */
-    private void cacheClear() {
-        File cacheDir = getIconsCacheDir();
-
-        if (!cacheDir.isDirectory())
-            return;
-
-        for (File item : cacheDir.listFiles()) {
-            if (!item.delete()) {
-                Log.w(TAG, "Failed to delete file: " + item.getAbsolutePath());
-            }
-        }
     }
 }
