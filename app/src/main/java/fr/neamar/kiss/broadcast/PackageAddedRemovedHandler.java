@@ -49,7 +49,7 @@ public class PackageAddedRemovedHandler extends BroadcastReceiver {
             KissApplication.getDataHandler(ctx).removeFromExcluded(packageName);
         }
 
-        KissApplication.resetIconsHandler(ctx);
+        KissApplication.resetIconsHandler();
 
         // Reload application list
         final AppProvider provider = KissApplication.getDataHandler(ctx).getAppProvider();

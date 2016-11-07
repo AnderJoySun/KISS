@@ -60,15 +60,16 @@ public class KissApplication {
         return iconHandler;
     }
 
-    public static void resetIconsHandler(Context ctx) {
-        iconHandler = new IconHandler(ctx);
+    public static void resetIconsHandler() {
+        iconHandler.reset();
     }
 
-    public static IconPack getIconPack(Context ctx) {
+    public static IconPack getIconPack() {
         return iconPack;
     }
 
     public static void setIconPack(IconPack pack) {
         iconPack = pack;
+        iconHandler.reset();
     }
 }

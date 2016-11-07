@@ -28,20 +28,20 @@ public class IconDiskCache {
      */
     private File cacheGetFileName(String key) {
         if (iconPack == null) {
-            return new File(getIconsCacheDir(context) + "default_" + key.hashCode() + ".png");
+            return new File(getIconsCacheDir() + "icon_" +  key.hashCode() + ".png");
         }
-        return new File(getIconsCacheDir(context) + iconPack.packageName + "_" + key.hashCode() + ".png");
+        return new File(getIconsCacheDir() + "icon_" + key.hashCode() + ".png");
     }
 
-    private File getIconsCacheDir(Context context) {
+    private File getIconsCacheDir() {
         return new File(context.getCacheDir().getPath() + "/icons/");
     }
 
     /**
      * Clear cache
      */
-    public void cacheClear(Context context) {
-        File cacheDir = getIconsCacheDir(context);
+    public void clear() {
+        File cacheDir = getIconsCacheDir();
 
         if (!cacheDir.isDirectory())
             return;
@@ -53,12 +53,12 @@ public class IconDiskCache {
         }
     }
 
-    public boolean isDrawableInCache(String key) {
+    private boolean isDrawableInCache(String key) {
         File drawableFile = cacheGetFileName(key);
         return drawableFile.isFile();
     }
 
-    public boolean cacheStoreDrawable(Context context, String key, IconPack iconPack, BitmapDrawable drawable) {
+    public boolean put(String key, BitmapDrawable drawable) {
         File drawableFile = cacheGetFileName(key);
         FileOutputStream fos;
         try {
@@ -73,7 +73,7 @@ public class IconDiskCache {
         return false;
     }
 
-    public Drawable cacheGetDrawable(String key) {
+    public Drawable get(String key) {
         if (!isDrawableInCache(key)) {
             return null;
         }
